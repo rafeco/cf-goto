@@ -8,8 +8,8 @@ compatibility_date = "2025-12-29"
 # Run: wrangler kv namespace create LINKS_KV --preview
 [[kv_namespaces]]
 binding = "LINKS_KV"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
-preview_id = "REPLACE_WITH_YOUR_PREVIEW_KV_NAMESPACE_ID"
+id = "943e21c7a8254733beaef9768e75fb7e"
+preview_id = "c52fd050ec8a4556bbe25a3d38a1794f"
 
 # Analytics Engine for tracking redirect usage
 [[analytics_engine_datasets]]

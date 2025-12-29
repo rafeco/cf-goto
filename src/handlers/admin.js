@@ -343,7 +343,7 @@ const adminHTML = `<!DOCTYPE html>
       linksTable.innerHTML = links.map(link => \`
         <tr>
           <td><strong>\${escapeHtml(link.shortcut)}</strong></td>
-          <td><a href="\${escapeHtml(link.url)}" target="_blank">\${truncate(escapeHtml(link.url), 50)}</a></td>
+          <td>\${link.url ? \`<a href="\${escapeHtml(link.url)}" target="_blank">\${truncate(escapeHtml(link.url), 50)}</a>\` : '<em>Missing URL</em>'}</td>
           <td>\${escapeHtml(link.description || '')}</td>
           <td class="stats">\${formatDate(link.createdAt)}</td>
           <td class="link-actions">
@@ -387,7 +387,14 @@ const adminHTML = `<!DOCTYPE html>
 
         if (response.ok) {
           showSuccess('Link deleted successfully');
-          loadLinks();
+
+          // Optimistic update: remove from UI immediately
+          allLinks = allLinks.filter(l => l.shortcut !== shortcut);
+          renderLinks(allLinks);
+          document.getElementById('linkCount').textContent = \`\${allLinks.length} link\${allLinks.length !== 1 ? 's' : ''}\`;
+
+          // Background refresh from KV after delay (eventual consistency)
+          setTimeout(() => loadLinks(), 2000);
         } else {
           showError(data.error || 'Failed to delete link');
         }
@@ -430,8 +437,9 @@ const adminHTML = `<!DOCTYPE html>
     }
 
     function formatDate(dateStr) {
+      if (!dateStr) return 'N/A';
       const date = new Date(dateStr);
-      return date.toLocaleDateString();
+      return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString();
     }
   </script>
 </body>

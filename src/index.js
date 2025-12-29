@@ -31,17 +31,6 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // Route: Debug (temporary - check token)
-    if (path === '/_debug') {
-      return new Response(JSON.stringify({
-        hasToken: !!env.AUTH_TOKEN,
-        tokenLength: env.AUTH_TOKEN?.length || 0,
-        tokenFirst10: env.AUTH_TOKEN?.substring(0, 10) || 'none'
-      }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
     // Route: Admin UI
     if (path === '/_manage') {
       // No auth required to view the admin UI page itself

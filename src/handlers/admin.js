@@ -54,7 +54,7 @@ const adminHTML = `<!DOCTYPE html>
           >
           <button type="submit">Login</button>
         </form>
-        <p class="stats">Your token will be stored in session storage</p>
+        <p class="stats">Your token will be stored locally in your browser</p>
       </article>
     </div>
 
@@ -151,7 +151,7 @@ const adminHTML = `<!DOCTYPE html>
 
   <script>
     // State
-    let authToken = sessionStorage.getItem('authToken');
+    let authToken = localStorage.getItem('authToken');
     let allLinks = [];
     let optimisticItems = new Map(); // Track items pending KV confirmation
     const apiBase = '/_api';
@@ -206,7 +206,7 @@ const adminHTML = `<!DOCTYPE html>
 
       if (response.ok) {
         authToken = token;
-        sessionStorage.setItem('authToken', token);
+        localStorage.setItem('authToken', token);
         authErrorMessage.textContent = '';
         showAdmin();
         loadLinks();
@@ -222,7 +222,7 @@ const adminHTML = `<!DOCTYPE html>
 
     // Logout handler
     logoutBtn.addEventListener('click', () => {
-      sessionStorage.removeItem('authToken');
+      localStorage.removeItem('authToken');
       authToken = null;
       showAuth();
     });

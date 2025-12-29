@@ -150,7 +150,7 @@ cf-goto/
 
 - Make sure you've set the AUTH_TOKEN secret: `wrangler secret put AUTH_TOKEN`
 - Check that you're entering the correct token in the admin UI
-- Token is stored in sessionStorage - try clearing browser data if having issues
+- Token is stored in localStorage - try clearing browser data if having issues
 
 ### KV errors during development
 

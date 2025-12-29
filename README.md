@@ -100,6 +100,67 @@ The Worker will be deployed to `goto-links.your-account.workers.dev`.
 
 Cloudflare will automatically configure DNS. Your service will be live at your custom domain in a few minutes!
 
+## CI/CD Setup (GitHub Actions)
+
+The project includes a GitHub Actions workflow that automatically deploys to Cloudflare Workers when you push to the main branch.
+
+### Setting Up Automated Deployments
+
+1. **Get your Cloudflare Account ID**
+
+   Find it in your Cloudflare dashboard URL: `https://dash.cloudflare.com/<your-account-id>`
+
+   Or run:
+   ```bash
+   wrangler whoami
+   ```
+
+2. **Create a Cloudflare API Token**
+
+   Go to: https://dash.cloudflare.com/profile/api-tokens
+
+   - Click "Create Token"
+   - Use the "Edit Cloudflare Workers" template
+   - Under "Account Resources", select your account
+   - Under "Zone Resources", select "All zones" or specific zones
+   - Click "Continue to summary" and "Create Token"
+   - **Copy the token** - you won't see it again!
+
+3. **Add secrets to your GitHub repository**
+
+   Go to your GitHub repo: **Settings** → **Secrets and variables** → **Actions**
+
+   Click "New repository secret" and add:
+
+   - Name: `CLOUDFLARE_API_TOKEN`
+     - Value: (paste the API token from step 2)
+
+   - Name: `CLOUDFLARE_ACCOUNT_ID`
+     - Value: (paste your account ID from step 1)
+
+4. **Push to trigger deployment**
+
+   ```bash
+   git add .
+   git commit -m "Your commit message"
+   git push origin main
+   ```
+
+   The workflow will automatically:
+   - Run ESLint to check code quality
+   - Deploy to Cloudflare Workers
+   - You can monitor progress in the "Actions" tab on GitHub
+
+### Manual Deployment
+
+You can still deploy manually when needed:
+
+```bash
+npm run deploy
+# or
+wrangler deploy
+```
+
 ## Usage
 
 ### Admin UI

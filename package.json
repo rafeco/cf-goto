@@ -1,0 +1,20 @@
+{
+  "name": "goto-links",
+  "version": "1.0.0",
+  "description": "A minimal personal URL shortener service deployed on Cloudflare Workers",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "lint": "eslint src/**/*.js",
+    "lint:fix": "eslint src/**/*.js --fix"
+  },
+  "keywords": ["cloudflare", "workers", "url-shortener", "redirect"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "wrangler": "^3.0.0"
+  }
+}

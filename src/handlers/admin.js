@@ -30,6 +30,7 @@ const adminHTML = `<!DOCTYPE html>
     }
     #successMessage {
       color: var(--pico-ins-color);
+      font-weight: 500;
     }
   </style>
 </head>
@@ -253,7 +254,31 @@ const adminHTML = `<!DOCTYPE html>
           document.getElementById('submitBtn').textContent = 'Create Link';
           document.getElementById('cancelBtn').classList.add('hidden');
           document.getElementById('shortcut').disabled = false;
-          loadLinks();
+
+          // Optimistic update: add/update the link in the UI immediately
+          const existingIndex = allLinks.findIndex(l => l.shortcut === data.shortcut);
+          if (existingIndex >= 0) {
+            // Update existing
+            allLinks[existingIndex] = {
+              shortcut: data.shortcut,
+              url: data.url,
+              description: data.description,
+              createdAt: data.createdAt
+            };
+          } else {
+            // Add new link at the beginning
+            allLinks.unshift({
+              shortcut: data.shortcut,
+              url: data.url,
+              description: data.description,
+              createdAt: data.createdAt
+            });
+          }
+          renderLinks(allLinks);
+          document.getElementById('linkCount').textContent = \`\${allLinks.length} link\${allLinks.length !== 1 ? 's' : ''}\`;
+
+          // Background refresh from KV after delay (eventual consistency)
+          setTimeout(() => loadLinks(), 2000);
         } else {
           showError(data.error || 'Failed to save link');
         }
@@ -391,7 +416,7 @@ const adminHTML = `<!DOCTYPE html>
     function showSuccess(message) {
       successMessage.textContent = message;
       errorMessage.textContent = '';
-      setTimeout(() => successMessage.textContent = '', 5000);
+      setTimeout(() => successMessage.textContent = '', 8000);
     }
 
     function escapeHtml(text) {

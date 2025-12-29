@@ -153,6 +153,7 @@ const adminHTML = `<!DOCTYPE html>
     // State
     let authToken = sessionStorage.getItem('authToken');
     let allLinks = [];
+    let optimisticItems = new Map(); // Track items pending KV confirmation
     const apiBase = '/_api';
 
     // DOM elements
@@ -255,29 +256,19 @@ const adminHTML = `<!DOCTYPE html>
           document.getElementById('cancelBtn').classList.add('hidden');
           document.getElementById('shortcut').disabled = false;
 
-          // Optimistic update: add/update the link in the UI immediately
-          const existingIndex = allLinks.findIndex(l => l.shortcut === data.shortcut);
-          if (existingIndex >= 0) {
-            // Update existing
-            allLinks[existingIndex] = {
-              shortcut: data.shortcut,
-              url: data.url,
-              description: data.description,
-              createdAt: data.createdAt
-            };
-          } else {
-            // Add new link at the beginning
-            allLinks.unshift({
-              shortcut: data.shortcut,
-              url: data.url,
-              description: data.description,
-              createdAt: data.createdAt
-            });
-          }
-          renderLinks(allLinks);
-          document.getElementById('linkCount').textContent = \`\${allLinks.length} link\${allLinks.length !== 1 ? 's' : ''}\`;
+          // Add to optimistic items (pending KV confirmation)
+          optimisticItems.set(data.shortcut, {
+            shortcut: data.shortcut,
+            url: data.url,
+            description: data.description,
+            createdAt: data.createdAt,
+            isOptimistic: true
+          });
 
-          // Background refresh from KV after delay (eventual consistency)
+          // Re-render with optimistic item
+          renderLinks();
+
+          // Background refresh from KV (will remove from optimistic when confirmed)
           setTimeout(() => loadLinks(), 2000);
         } else {
           showError(data.error || 'Failed to save link');
@@ -298,13 +289,8 @@ const adminHTML = `<!DOCTYPE html>
 
     // Search handler
     searchInput.addEventListener('input', () => {
-      const query = searchInput.value.toLowerCase();
-      const filtered = allLinks.filter(link =>
-        link.shortcut.toLowerCase().includes(query) ||
-        link.url.toLowerCase().includes(query) ||
-        (link.description || '').toLowerCase().includes(query)
-      );
-      renderLinks(filtered);
+      const query = searchInput.value;
+      renderLinks(query);
     });
 
     // Load links from API
@@ -320,15 +306,62 @@ const adminHTML = `<!DOCTYPE html>
 
         const data = await response.json();
         allLinks = data.links || [];
-        renderLinks(allLinks);
-        document.getElementById('linkCount').textContent = \`\${allLinks.length} link\${allLinks.length !== 1 ? 's' : ''}\`;
+
+        // Clean up optimistic items that are now confirmed in KV
+        const kvShortcuts = new Set(allLinks.map(l => l.shortcut));
+
+        for (const [shortcut, item] of optimisticItems) {
+          if (item.isDeleting && !kvShortcuts.has(shortcut)) {
+            // Deletion confirmed - remove from optimistic
+            optimisticItems.delete(shortcut);
+          } else if (item.isOptimistic && kvShortcuts.has(shortcut)) {
+            // Creation confirmed - remove from optimistic
+            optimisticItems.delete(shortcut);
+          }
+        }
+
+        renderLinks();
       } catch (error) {
         showError('Failed to load links: ' + error.message);
       }
     }
 
     // Render links table
-    function renderLinks(links) {
+    function renderLinks(searchQuery = null) {
+      // Merge real links with optimistic items
+      const linksMap = new Map();
+
+      // Add all real links from KV
+      allLinks.forEach(link => {
+        linksMap.set(link.shortcut, link);
+      });
+
+      // Add/overlay optimistic items
+      optimisticItems.forEach((item, shortcut) => {
+        if (item.isDeleting) {
+          // Remove items being deleted
+          linksMap.delete(shortcut);
+        } else if (item.isOptimistic) {
+          // Add optimistic new items
+          linksMap.set(shortcut, item);
+        }
+      });
+
+      let links = Array.from(linksMap.values());
+
+      // Apply search filter if provided
+      if (searchQuery !== null) {
+        const query = searchQuery.toLowerCase();
+        links = links.filter(link =>
+          link.shortcut.toLowerCase().includes(query) ||
+          link.url.toLowerCase().includes(query) ||
+          (link.description || '').toLowerCase().includes(query)
+        );
+      }
+
+      // Update count
+      document.getElementById('linkCount').textContent = \`\${links.length} link\${links.length !== 1 ? 's' : ''}\`;
+
       if (links.length === 0) {
         linksTable.innerHTML = \`
           <tr>
@@ -340,18 +373,23 @@ const adminHTML = `<!DOCTYPE html>
         return;
       }
 
-      linksTable.innerHTML = links.map(link => \`
-        <tr>
-          <td><strong>\${escapeHtml(link.shortcut)}</strong></td>
-          <td>\${link.url ? \`<a href="\${escapeHtml(link.url)}" target="_blank">\${truncate(escapeHtml(link.url), 50)}</a>\` : '<em>Missing URL</em>'}</td>
-          <td>\${escapeHtml(link.description || '')}</td>
-          <td class="stats">\${formatDate(link.createdAt)}</td>
-          <td class="link-actions">
-            <button class="secondary outline" onclick="editLink('\${escapeHtml(link.shortcut)}')">Edit</button>
-            <button class="secondary outline" onclick="deleteLink('\${escapeHtml(link.shortcut)}')">Delete</button>
-          </td>
-        </tr>
-      \`).join('');
+      linksTable.innerHTML = links.map(link => {
+        const isOptimistic = link.isOptimistic === true;
+        const disabled = isOptimistic ? 'disabled' : '';
+
+        return \`
+          <tr\${isOptimistic ? ' style="opacity: 0.6;"' : ''}>
+            <td><strong>\${escapeHtml(link.shortcut)}</strong>\${isOptimistic ? ' <em style="color: var(--pico-muted-color); font-size: 0.75rem;">(saving...)</em>' : ''}</td>
+            <td>\${link.url ? \`<a href="\${escapeHtml(link.url)}" target="_blank">\${truncate(escapeHtml(link.url), 50)}</a>\` : '<em>Missing URL</em>'}</td>
+            <td>\${escapeHtml(link.description || '')}</td>
+            <td class="stats">\${formatDate(link.createdAt)}</td>
+            <td class="link-actions">
+              <button class="secondary outline" onclick="editLink('\${escapeHtml(link.shortcut)}')" \${disabled}>Edit</button>
+              <button class="secondary outline" onclick="deleteLink('\${escapeHtml(link.shortcut)}')" \${disabled}>Delete</button>
+            </td>
+          </tr>
+        \`;
+      }).join('');
     }
 
     // Edit link
@@ -388,12 +426,16 @@ const adminHTML = `<!DOCTYPE html>
         if (response.ok) {
           showSuccess('Link deleted successfully');
 
-          // Optimistic update: remove from UI immediately
-          allLinks = allLinks.filter(l => l.shortcut !== shortcut);
-          renderLinks(allLinks);
-          document.getElementById('linkCount').textContent = \`\${allLinks.length} link\${allLinks.length !== 1 ? 's' : ''}\`;
+          // Mark as deleting (pending KV confirmation)
+          optimisticItems.set(shortcut, {
+            shortcut,
+            isDeleting: true
+          });
 
-          // Background refresh from KV after delay (eventual consistency)
+          // Re-render to show deleting state
+          renderLinks();
+
+          // Background refresh from KV (will confirm deletion)
           setTimeout(() => loadLinks(), 2000);
         } else {
           showError(data.error || 'Failed to delete link');

@@ -1,6 +1,6 @@
 # Go Links - Personal URL Shortener
 
-A minimal personal URL shortener service deployed on Cloudflare Workers. Create memorable short links like `goto.rafe.eco/cf` that redirect to frequently used URLs.
+A minimal personal URL shortener service deployed on Cloudflare Workers. Create memorable short links like `goto.example.com/abc` that redirect to frequently used URLs.
 
 ## Features
 

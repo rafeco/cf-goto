@@ -1,0 +1,17 @@
+name = "goto-links"
+main = "src/index.js"
+compatibility_date = "2025-12-29"
+
+# KV namespace for storing link mappings
+# Note: You'll need to create these namespaces and add the IDs here
+# Run: wrangler kv namespace create LINKS_KV
+# Run: wrangler kv namespace create LINKS_KV --preview
+[[kv_namespaces]]
+binding = "LINKS_KV"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+preview_id = "REPLACE_WITH_YOUR_PREVIEW_KV_NAMESPACE_ID"
+
+# Analytics Engine for tracking redirect usage
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "goto_links"

@@ -75,7 +75,7 @@ const adminHTML = `<!DOCTYPE html>
               id="shortcut"
               placeholder="gh"
               required
-              pattern="[a-zA-Z0-9][a-zA-Z0-9_\-]*[a-zA-Z0-9]|[a-zA-Z0-9]"
+              pattern="[a-zA-Z0-9][a-zA-Z0-9_\\-]*[a-zA-Z0-9]|[a-zA-Z0-9]"
               title="Alphanumeric with hyphens/underscores (no leading/trailing hyphens)"
             >
             <small>The short path (e.g., "gh" for goto.rafe.eco/gh)</small>
